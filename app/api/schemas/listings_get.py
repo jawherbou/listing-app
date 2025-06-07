@@ -42,5 +42,5 @@ class ListingFilters(BaseModel):
     scan_date_to: Optional[datetime] = None
     is_active: Optional[bool] = None
     image_hashes: Optional[List[str]] = None
-    dataset_entities: Optional[Dict[str, Any]] = None
+    dataset_entities:  Optional[Dict[str, Any]] = None
     property_filters: Optional[Dict[int, Union[str, bool]]] = None
