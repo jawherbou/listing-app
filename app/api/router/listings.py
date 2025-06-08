@@ -55,7 +55,7 @@ def retrieve_listings(
     except ValidationError as ve:
         raise HTTPException(status_code=422, detail=ve.errors())
     except SQLAlchemyError as db_err:
-        raise HTTPException(status_code=500, detail="Database error occurred.")
+        raise HTTPException(status_code=500, detail=f"Database error occurred. {str(db_err)}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
 

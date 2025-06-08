@@ -1,19 +1,27 @@
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, scoped_session, declarative_base
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.declarative import declarative_base
 import os
 
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "postgresql+psycopg2://postgres:password@localhost:5432/database",
-)
+Base = declarative_base()
+engine = None
+SessionLocal = None
 
-engine = create_engine(DATABASE_URL, pool_pre_ping=True)
+def get_engine():
+    global engine
+    if engine is None:
+        db_url = os.getenv("DATABASE_URL", "postgresql://postgres:password@localhost:5432/database")
+        engine = create_engine(db_url, pool_pre_ping=True)
+    return engine
 
-SessionLocal = scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=engine))
-
+def get_session():
+    global SessionLocal
+    if SessionLocal is None:
+        SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=get_engine())
+    return SessionLocal()
 
 def get_db():
-    db = SessionLocal()
+    db = get_session()
     try:
         yield db
     finally:

@@ -1,9 +1,9 @@
 from sqlalchemy.orm import Session
-from app.models.database import SessionLocal
+from app.models.database import get_session
 from app.models import schemas as models
 
 def seed_data():
-    db: Session = SessionLocal()
+    db: Session = get_session()
 
     # --- Dataset Entities ---
     dataset_entities = [

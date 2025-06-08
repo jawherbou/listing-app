@@ -1,6 +1,7 @@
 services:
   db:
     image: postgres:17-alpine
+    container_name: db
     restart: always
     volumes:
       - postgres_data:/var/lib/postgresql/data/
@@ -10,6 +11,24 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=password
       - POSTGRES_DB=database
+
+  api:
+    build: .
+    container_name: fastapi_app
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: postgresql://postgres:password@db:5432/database
+    command: /bin/bash -c "
+      /app/wait-for.sh db &&
+      alembic upgrade head &&
+      python seed_data.py &&
+      uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+      "
+    ports:
+      - 8000:8000
+    volumes:
+      - .:/app
 
 volumes:
   postgres_data:
