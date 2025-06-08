@@ -20,7 +20,9 @@ services:
     environment:
       DATABASE_URL: postgresql://postgres:password@db:5432/database
     command: /bin/bash -c "
-      /app/wait-for.sh db &&
+      until pg_isready -h db -p 5432 -U postgres; do
+        sleep 1;
+      done &&
       alembic upgrade head &&
       python seed_data.py &&
       uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload

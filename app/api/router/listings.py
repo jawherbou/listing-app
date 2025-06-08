@@ -72,9 +72,9 @@ def upsert_listings_endpoint(
     except ValidationError as ve:
         db.rollback()
         raise HTTPException(status_code=422, detail=ve.errors())
-    except SQLAlchemyError as se:
+    except SQLAlchemyError as db_err:
         db.rollback()
-        raise HTTPException(status_code=500, detail="Database error during upsert.")
+        raise HTTPException(status_code=500, detail=f"Database error during upsert. {str(db_err)}")
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
