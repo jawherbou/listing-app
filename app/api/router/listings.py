@@ -5,7 +5,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from pydantic import ValidationError
 from app.api.schemas.listings_get import ListingsResponse, ListingFilters
 from app.api.schemas.listings_insert import ListingsInsertRequest
-from app.api.services.listings import get_listings
+from app.api.services.listings import get_listings, upsert_listings
 from app.models.database import get_db
 
 router = APIRouter()
@@ -61,9 +61,21 @@ def retrieve_listings(
 
 
 
-@router.post("/upsert")
+@router.put("/upsert")
 def upsert_listings_endpoint(
     payload: ListingsInsertRequest,
     db: Session = Depends(get_db)
 ):
-    return {"message": "Listings inserted/updated successfully."}
+    try:
+        upsert_listings(db, payload)
+        return {"message": "Listings inserted/updated successfully."}
+    except ValidationError as ve:
+        db.rollback()
+        raise HTTPException(status_code=422, detail=ve.errors())
+    except SQLAlchemyError as se:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Database error during upsert.")
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
+

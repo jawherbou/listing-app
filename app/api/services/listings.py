@@ -1,5 +1,6 @@
 from typing import Dict, Any
 from sqlalchemy.orm import Session
+from app.api.schemas.listings_insert import ListingsInsertRequest
 from app.models.schemas import (
     Listing,
     StringPropertyValue,
@@ -133,3 +134,77 @@ def get_listings(
         })
 
     return ListingsResponse(listings=results, total=total_count)
+
+
+def upsert_listings( db: Session, data: ListingsInsertRequest):
+    for listing in data.listings:
+        # upsert Listing
+        existing_listing = db.query(Listing).filter_by(listing_id=listing.listing_id).first()
+
+        # resolve entities first to get their IDs
+        entity_ids = []
+        for entity in listing.entities:
+            entity_obj = db.query(DatasetEntity).filter_by(name=entity.name).first()
+            if not entity_obj:
+                entity_obj = DatasetEntity(name=entity.name, data=entity.data)
+                db.add(entity_obj)
+                db.flush()
+            else:
+                # update data if changed
+                if entity_obj.data != entity.data:
+                    entity_obj.data = entity.data
+            entity_ids.append(entity_obj.entity_id)
+
+        if not existing_listing:
+            new_listing = Listing(
+                listing_id=listing.listing_id,
+                scan_date=listing.scan_date,
+                is_active=listing.is_active,
+                image_hashes=listing.image_hashes,
+                dataset_entity_ids=entity_ids,
+            )
+            db.add(new_listing)
+        else:
+            existing_listing.scan_date = listing.scan_date
+            existing_listing.is_active = listing.is_active
+            existing_listing.image_hashes = listing.image_hashes
+            existing_listing.dataset_entity_ids = entity_ids
+
+        db.flush()
+
+        # handle properties
+        for prop in listing.properties:
+            # upsert property definition
+            prop_obj = db.query(Property).filter_by(name=prop.name).first()
+            if not prop_obj:
+                prop_obj = Property(name=prop.name, type='string' if prop.type == 'str' else 'boolean')
+                db.add(prop_obj)
+                db.flush()
+
+            # upsert property value
+            if prop.type == 'str':
+                existing_val = db.query(StringPropertyValue).filter_by(
+                    listing_id=listing.listing_id, property_id=prop_obj.property_id
+                ).first()
+                if not existing_val:
+                    db.add(StringPropertyValue(
+                        listing_id=listing.listing_id,
+                        property_id=prop_obj.property_id,
+                        value=prop.value
+                    ))
+                else:
+                    existing_val.value = prop.value
+            elif prop.type == 'bool':
+                existing_val = db.query(BoolPropertyValue).filter_by(
+                    listing_id=listing.listing_id, property_id=prop_obj.property_id
+                ).first()
+                if not existing_val:
+                    db.add(BoolPropertyValue(
+                        listing_id=listing.listing_id,
+                        property_id=prop_obj.property_id,
+                        value=prop.value
+                    ))
+                else:
+                    existing_val.value = prop.value
+
+        db.commit()
