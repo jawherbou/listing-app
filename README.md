@@ -1,5 +1,15 @@
 # listing-app
 
+## Overview
+
+This project provides a FastAPI backend for managing listings with structured properties and dataset entities. Below are the main sections in this README:
+
+1. [Quickstart](#quickstart)
+2. [Step-by-step Example - PUT and GET Endpoints](#step-by-step-example---put-and-get-endpoints)
+3. [Relationships Between Tables](#relationships-between-tables)
+4. [Migrations with Alembic](#migrations-with-alembic)
+5. [Deployment Guide (Render + Neon)](#deployment-guide-render--neon)
+
 ## Quickstart
 
 ### 1. Fork or clone repository
@@ -8,6 +18,8 @@
 ```bash
 docker compose up --build
 ```
+
+>Note: for a quick test you can access the deployed project https://listing-app-axhe.onrender.com/docs#/  <br><b>I am using the free tier on Render, they might spin down the service after some time of inactivity.
 
 ## Step by step example - PUT and GET endpoints
 
@@ -147,3 +159,42 @@ alembic upgrade head
 <b> New migration </b> <br>
 For new models or changes in the schemas, we can generate a new file under versions
 or autogenerate the changes. Then we can run the upgrade command to apply the changes.
+
+## Deployment Guide (Render + Neon)
+
+This project is deployed using:
+
+🌐 Render to host the FastAPI application.
+
+🛢️ Neon to host the PostgreSQL database.
+
+The deployed app: https://listing-app-axhe.onrender.com/docs#/
+
+### 🛠️ Steps to Deploy
+
+#### 1. Prepare Neon PostgreSQL Database
+
+- Go to [https://neon.tech](https://neon.tech) and create a new project.
+- Create a new branch and database (or use the default).
+- Copy the connection string.
+
+#### 2. Setup Render
+
+- Go to [https://render.com](https://render.com) and create a new Web Service.
+- Connect your GitHub repo.
+- For environment:
+- **Build Command**:  
+  ```bash
+  pip install -r requirements.txt
+  ```
+- **Start Command**:  
+  ```bash
+  uvicorn app.main:app --host 0.0.0.0 --port 10000
+  ```
+- **Runtime**: Python 3.x
+- **Environment Variables**:
+  - `DATABASE_URL`: the Neon connection string you copied.
+
+> <b>I am using the free tier on Render, they might spin down the service after some time of inactivity. Time of inactivity might be 15 minutes. I can restart the service on demand on the other hand.
+
+![Alt text](deployed-service.png)
